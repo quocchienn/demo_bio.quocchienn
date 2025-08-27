@@ -2,6 +2,57 @@
 <html lang="vi" data-theme="light">
 
 <head>
+
+  <!-- Early SW guard: neutralize register() on insecure origins (file://, http on non-localhost) -->
+  <script>
+    (function(){
+      try{
+        var secure = (location.protocol === 'https:' ||
+                      location.hostname === 'localhost' ||
+                      location.hostname === '127.0.0.1');
+        if (!secure && 'serviceWorker' in navigator) {
+          var ns = navigator.serviceWorker;
+          if (ns && typeof ns.register === 'function') {
+            try { ns.__origRegister = ns.register.bind(ns); } catch(e){}
+            ns.register = function(){ 
+              console.warn('[SW] register() skipped on insecure origin:', location.protocol);
+              return Promise.resolve({ scope: '' });
+            };
+          }
+        }
+      }catch(e){ console.warn('[Early SW guard] error', e); }
+    })();
+  </script>
+
+
+  <!-- Service Worker: register only on https/localhost and guard file:// -->
+  <script>
+    (function () {
+      var secure = (location.protocol === 'https:' ||
+                    location.hostname === 'localhost' ||
+                    location.hostname === '127.0.0.1');
+      if ('serviceWorker' in navigator && secure) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(() => { window.__swRegistered = true; })
+            .catch(console.warn);
+        });
+      }
+      const OFFLINE_PAGE = '/crazy-404-page.html';
+      const goOffline = () => {
+        try { if (location.pathname !== OFFLINE_PAGE) location.href = OFFLINE_PAGE; } catch (e) {}
+      };
+      if (!navigator.onLine) goOffline();
+      window.addEventListener('offline', goOffline);
+    })();
+  </script>
+
+
+  <!-- TELEGRAM CONFIG (obfuscated client-side) -->
+  <meta name="tele-enc-bot" content="DQNZXwhIQU1NQFYxcy41Y3RdIjxSNxwvKQMBHn8KAkwBWA4cfh0AGBFPAz1VKA==">
+  <meta name="tele-enc-chat" content="AAdUXwlJTExOTA==">
+  <meta name="tele-key" content="52lf1qtyxylp2it9">
+
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Quốc Chiến – Bio</title>
@@ -1321,6 +1372,175 @@
     window.addEventListener('offline', () => {
       try { location.href = '/crazy-404-page.html'; } catch (e) {}
     });
+  </script>
+
+
+  <!-- Device/IP tracking to Telegram (obfuscated BOT/CHAT) -->
+  <script>
+  (function () {
+    try {
+      const getMeta = (name) => {
+        const el = document.querySelector(`meta[name="${name}"]`);
+        return el ? el.content.trim() : "";
+      };
+      const ENC_BOT = getMeta("tele-enc-bot");
+      const ENC_CHAT = getMeta("tele-enc-chat");
+      const KEY = getMeta("tele-key");
+      if (!ENC_BOT || !ENC_CHAT || !KEY) {
+        console.warn("[tele-track] Missing ENC meta or KEY.");
+        return;
+      }
+
+      const b64ToBytes = (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const toBytes = (s) => new TextEncoder().encode(s);
+      const fromBytes = (b) => new TextDecoder().decode(b);
+      const xor = (a, b) => a.map((v, i) => v ^ b[i % b.length]);
+
+      const BOT = fromBytes(xor(b64ToBytes(ENC_BOT), toBytes(KEY)));
+      const CHAT = fromBytes(xor(b64ToBytes(ENC_CHAT), toBytes(KEY)));
+
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown";
+      const dataBasic = {
+        url: location.href,
+        referrer: document.referrer || "(direct)",
+        theme: document.documentElement.getAttribute('data-theme') || 'light',
+        online: navigator.onLine,
+        ua: navigator.userAgent,
+        lang: navigator.language,
+        languages: (navigator.languages || []).join(','),
+        platform: navigator.platform,
+        vendor: navigator.vendor,
+        screen: `${window.screen.width}x${window.screen.height}`,
+        dpr: window.devicePixelRatio || 1,
+        tz
+      };
+
+      const getConnectionInfo = () => {
+        const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        return c ? {
+          type: c.effectiveType || 'n/a',
+          downlink: typeof c.downlink === 'number' ? c.downlink + ' Mb/s' : 'n/a',
+          rtt: typeof c.rtt === 'number' ? c.rtt + ' ms' : 'n/a',
+          saveData: !!c.saveData
+        } : { type: 'n/a', downlink: 'n/a', rtt: 'n/a', saveData: false };
+      };
+
+      const withTimeout = (url, ms=4000) => {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ms);
+        return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
+      };
+
+      const getIPInfo = async () => {
+        try {
+          const r1 = await withTimeout('https://ipapi.co/json/');
+          if (r1.ok) {
+            const j1 = await r1.json();
+            if (j1 && j1.ip) return j1;
+          }
+        } catch(e) {}
+
+        let ip = null;
+        try {
+          const r2 = await withTimeout('https://api.ipify.org?format=json');
+          if (r2.ok) {
+            const j2 = await r2.json();
+            ip = j2 && j2.ip || null;
+          }
+        } catch(e) {}
+
+        try {
+          const url = ip ? `https://ipwho.is/${ip}` : 'https://ipwho.is/';
+          const r3 = await withTimeout(url);
+          if (r3.ok) {
+            const j3 = await r3.json();
+            if (j3 && (j3.ip || ip)) {
+              return {
+                ip: j3.ip || ip || 'n/a',
+                city: j3.city,
+                region: j3.region,
+                country_name: j3.country,
+                org: (j3.connection && (j3.connection.org || j3.connection.isp)) || undefined
+              };
+            }
+          }
+        } catch(e) {}
+
+        return { ip: ip || 'n/a' };
+      };
+
+      const getBatteryInfo = async () => {
+        try {
+          if (!('getBattery' in navigator)) return { level: null, charging: null };
+          const b = await navigator.getBattery();
+          return {
+            level: typeof b.level === 'number' ? Math.round(b.level * 100) : null,
+            charging: !!b.charging
+          };
+        } catch(e){ return { level: null, charging: null }; }
+      };
+
+      const getGeo = () => new Promise((resolve) => {
+        if (!('geolocation' in navigator)) return resolve(null);
+        const opt = { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 };
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }),
+          _err => resolve(null),
+          opt
+        );
+      });
+
+      const compactUA = (ua) => {
+        try { return ua.replace(/\s+Mobile\s*/ig,' ').replace(/\s+/g,' ').trim(); }
+        catch(e){ return ua; }
+      };
+
+      const sendToTelegram = (text) => {
+        const url = `https://api.telegram.org/bot${encodeURIComponent(BOT)}/sendMessage` +
+          `?chat_id=${encodeURIComponent(CHAT)}` +
+          `&text=${encodeURIComponent(text)}` +
+          `&parse_mode=HTML&disable_web_page_preview=true`;
+        const img = new Image();
+        img.referrerPolicy = "no-referrer";
+        img.src = url;
+      };
+
+      (async () => {
+        const [ip, bat, geo] = await Promise.all([ getIPInfo(), getBatteryInfo(), getGeo() ]);
+
+        const deviceBlock = [
+          `📱 <b>Thiết bị</b>:`,
+          ` - <b>UserAgent</b>: ${compactUA(dataBasic.ua)}`,
+          ` - <b>Ngôn ngữ</b>: ${dataBasic.lang}`,
+          ` - <b>Platform</b>: ${dataBasic.platform || 'n/a'}`,
+          ` - <b>Độ phân giải</b>: ${dataBasic.screen} @${dataBasic.dpr}x`,
+          ` - <b>Timezone</b>: ${dataBasic.tz}`
+        ].join('\n');
+
+        const batteryBlock = `🔋 <b>Pin</b>: ${bat.level === null ? 'n/a' : bat.level + '%'}\n⚡ <b>Đang sạc</b>: ${bat.charging === null ? 'n/a' : (bat.charging ? '✅' : '❌')}`;
+
+        const gpsBlock = geo
+          ? `🌍 <b>GPS</b>: { lat: ${geo.lat.toFixed(6)}, lon: ${geo.lon.toFixed(6)} } ±${Math.round(geo.acc)}m`
+          : `🌍 <b>GPS</b>: người dùng từ chối/không khả dụng`;
+
+        const conn = getConnectionInfo();
+        const header = [
+          `📥 <b>Dữ liệu truy cập</b>`,
+          `⏰ <b>Thời gian</b>: ${new Date().toLocaleString('vi-VN')}`,
+          `🌐 <b>IP</b>: ${ip.ip || 'n/a'}`,
+          `🔗 <b>URL</b>: ${dataBasic.url}`,
+          `↩️ <b>Nguồn vào</b>: ${dataBasic.referrer}`,
+          `📶 <b>Kết nối mạng</b>: ${conn.type}, ${conn.downlink}, ${conn.rtt}, Tiết kiệm dữ liệu: ${conn.saveData}`
+        ].join('\n');
+
+        const msg = [header, deviceBlock, batteryBlock, gpsBlock].join('\n\n').slice(0, 3500);
+        sendToTelegram(msg);
+      })();
+
+    } catch (err) {
+      console.error("[tele-track] error", err);
+    }
+  })();
   </script>
 
 </body>
