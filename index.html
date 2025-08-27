@@ -1,938 +1,946 @@
 <!doctype html>
 <html lang="vi" data-theme="light">
 
-  <!-- Early SW guard: neutralize register() on insecure origins (file://, http non-localhost) -->
-  <script>
-    (function(){
-      try{
-        var secure = (location.protocol === 'https:' ||
-                      location.hostname === 'localhost' ||
-                      location.hostname === '127.0.0.1');
-        if (!secure && 'serviceWorker' in navigator) {
-          var ns = navigator.serviceWorker;
-          if (ns && typeof ns.register === 'function') {
-            try { ns.__origRegister = ns.register.bind(ns); } catch(e){}
-            ns.register = function(){
-              console.warn('[SW] register() skipped on insecure origin:', location.protocol);
-              return Promise.resolve({ scope: '' });
+<!-- Early SW guard: neutralize register() on insecure origins (file://, http non-localhost) -->
+<script>
+    (function() {
+        try {
+            var secure = (location.protocol === 'https:' ||
+                location.hostname === 'localhost' ||
+                location.hostname === '127.0.0.1');
+            if (!secure && 'serviceWorker' in navigator) {
+                var ns = navigator.serviceWorker;
+                if (ns && typeof ns.register === 'function') {
+                    try {
+                        ns.__origRegister = ns.register.bind(ns);
+                    } catch (e) {}
+                    ns.register = function() {
+                        console.warn('[SW] register() skipped on insecure origin:', location.protocol);
+                        return Promise.resolve({
+                            scope: ''
+                        });
+                    };
+                }
+            }
+            // Offline redirect helper
+            const OFFLINE_PAGE = '/crazy-404-page.html'; // change if needed
+            const goOffline = () => {
+                try {
+                    if (location.pathname !== OFFLINE_PAGE) location.href = OFFLINE_PAGE;
+                } catch (e) {}
             };
-          }
+            if (!navigator.onLine) goOffline();
+            window.addEventListener('offline', goOffline);
+        } catch (e) {
+            console.warn('[Early SW guard] error', e);
         }
-        // Offline redirect helper
-        const OFFLINE_PAGE = '/crazy-404-page.html'; // change if needed
-        const goOffline = () => {
-          try { if (location.pathname !== OFFLINE_PAGE) location.href = OFFLINE_PAGE; } catch (e) {}
-        };
-        if (!navigator.onLine) goOffline();
-        window.addEventListener('offline', goOffline);
-      }catch(e){ console.warn('[Early SW guard] error', e); }
     })();
-  </script>
+</script>
 
 
-  <!-- TELEGRAM CONFIG (obfuscated client-side) -->
-  <meta name="tele-enc-bot" content="WlYCXwlWR0FXV1UucD83KiMIeTxTKRojMxQCAXwbAAVWDVUcfwMGFAtYACJWOQ==">
-  <meta name="tele-enc-chat" content="V1IPXwhXSkBUWw==">
-  <meta name="tele-key" content="bg7f0orubnoo1xvp">
+<!-- TELEGRAM CONFIG (obfuscated client-side) -->
+<meta name="tele-enc-bot" content="WlYCXwlWR0FXV1UucD83KiMIeTxTKRojMxQCAXwbAAVWDVUcfwMGFAtYACJWOQ==">
+<meta name="tele-enc-chat" content="V1IPXwhXSkBUWw==">
+<meta name="tele-key" content="bg7f0orubnoo1xvp">
 
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Quốc Chiến – Bio</title>
-    <meta name="description" content="Website cá nhân" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet" />
-    <style>
-        /* ============== THEME ============== */
-        
-         :root {
-            --bg1: #eef2f9;
-            --bg2: #cfe0ff;
-            --surface: #ffffff;
-            --surface-2: #f7f9ff;
-            --text: #202533;
-            --muted: #7a889c;
-            --brand: #2f83ff;
-            --brand-2: #7c4dff;
-            --ok: #10b981;
-            --warn: #e7c46b;
-            --shadow: 0 10px 30px rgba(0, 0, 0, .12);
-            --shadow-lg: 0 18px 46px rgba(0, 0, 0, .14);
-            --ring: #ffffffcc;
-            --ring2: #00000012;
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quốc Chiến – Bio</title>
+<meta name="description" content="Website cá nhân" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+    /* ============== THEME ============== */
+    
+     :root {
+        --bg1: #eef2f9;
+        --bg2: #cfe0ff;
+        --surface: #ffffff;
+        --surface-2: #f7f9ff;
+        --text: #202533;
+        --muted: #7a889c;
+        --brand: #2f83ff;
+        --brand-2: #7c4dff;
+        --ok: #10b981;
+        --warn: #e7c46b;
+        --shadow: 0 10px 30px rgba(0, 0, 0, .12);
+        --shadow-lg: 0 18px 46px rgba(0, 0, 0, .14);
+        --ring: #ffffffcc;
+        --ring2: #00000012;
+    }
+    
+    [data-theme="dark"] {
+        --bg1: #0f1220;
+        --bg2: #12142a;
+        --surface: #161a33;
+        --surface-2: #0f1426;
+        --text: #e5ecff;
+        --muted: #a5b3d1;
+        --brand: #6aa6ff;
+        --brand-2: #b388ff;
+        --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+        --shadow-lg: 0 18px 46px rgba(0, 0, 0, .55);
+        --ring: #00000055;
+        --ring2: #ffffff12;
+    }
+    
+    * {
+        box-sizing: border-box
+    }
+    
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Poppins, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        color: var(--text);
+        background: linear-gradient(180deg, var(--bg1), var(--bg2)) fixed;
+    }
+    /* soft decorative blobs */
+    
+    body::before,
+    body::after {
+        content: "";
+        position: fixed;
+        inset: auto auto 10% -80px;
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(closest-side, var(--brand-2) 0%, transparent 70%);
+        filter: blur(48px);
+        opacity: .25;
+        pointer-events: none;
+        z-index: 0;
+        transform: rotate(12deg);
+    }
+    
+    body::after {
+        inset: 8% -80px auto auto;
+        width: 360px;
+        height: 360px;
+        background: radial-gradient(closest-side, var(--brand) 0%, transparent 70%);
+        transform: rotate(-12deg);
+    }
+    
+    .container {
+        width: min(1100px, 92%);
+        margin-inline: auto;
+        position: relative;
+        z-index: 1;
+    }
+    /* ============== NAV ============== */
+    
+    nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: saturate(1.2) blur(10px);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .75), rgba(255, 255, 255, .55));
+        border-bottom: 1px solid var(--ring2);
+    }
+    
+    [data-theme="dark"] nav {
+        background: linear-gradient(180deg, rgba(22, 26, 51, .72), rgba(22, 26, 51, .6));
+    }
+    
+    .nav-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 0;
+    }
+    
+    .brand {
+        font-weight: 800;
+        letter-spacing: .3px;
+        margin-right: 8px;
+    }
+    
+    .tabs {
+        display: flex;
+        gap: 10px;
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .nav-link {
+        font-weight: 700;
+        padding: 8px 14px;
+        border-radius: 999px;
+        text-decoration: none;
+        color: var(--text);
+        transition: .2s;
+        border: 1px solid transparent;
+        background: transparent;
+    }
+    
+    .nav-link:hover {
+        background: var(--surface-2);
+    }
+    
+    .nav-link.active {
+        color: var(--brand);
+        background: color-mix(in oklab, var(--brand) 14%, transparent);
+        border-color: color-mix(in oklab, var(--brand) 24%, transparent);
+    }
+    
+    .nav-ops {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    
+    .icon-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid var(--ring2);
+        background: var(--surface);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+        transition: transform .15s, filter .15s;
+    }
+    
+    .icon-btn:hover {
+        transform: translateY(-2px);
+    }
+    /* ============== HERO ============== */
+    
+    .hero {
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 46px 0 10px;
+    }
+    
+    .avatar-wrap {
+        position: relative;
+        width: 120px;
+        height: 120px;
+    }
+    
+    .avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: var(--shadow);
+        position: relative;
+        z-index: 2;
+    }
+    /* ring double */
+    
+    .avatar-wrap::before,
+    .avatar-wrap::after {
+        content: "";
+        position: absolute;
+        inset: -10px;
+        border-radius: 50%;
+        border: 10px solid var(--ring);
+        z-index: 1;
+        filter: drop-shadow(0 10px 24px var(--ring2));
+    }
+    
+    .avatar-wrap::after {
+        inset: -22px;
+        border: 2px dashed color-mix(in oklab, var(--brand) 60%, transparent);
+        animation: spin 14s linear infinite;
+        opacity: .7;
+    }
+    
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
         }
-        
-        [data-theme="dark"] {
-            --bg1: #0f1220;
-            --bg2: #12142a;
-            --surface: #161a33;
-            --surface-2: #0f1426;
-            --text: #e5ecff;
-            --muted: #a5b3d1;
-            --brand: #6aa6ff;
-            --brand-2: #b388ff;
-            --shadow: 0 10px 30px rgba(0, 0, 0, .5);
-            --shadow-lg: 0 18px 46px rgba(0, 0, 0, .55);
-            --ring: #00000055;
-            --ring2: #ffffff12;
+    }
+    
+    .intro-top {
+        opacity: .8;
+        margin: .6rem 0 0;
+    }
+    
+    .name {
+        margin: .2rem 0 0;
+        font-size: clamp(28px, 6vw, 48px);
+        line-height: 1.08;
+    }
+    
+    .role {
+        opacity: .9;
+        margin: .3rem 0 1.1rem;
+    }
+    
+    .role-typing {
+        font-weight: 700;
+        background: linear-gradient(90deg, var(--brand-2), var(--brand));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        border-right: 2px solid var(--brand-2);
+        padding-right: 4px;
+    }
+    /* ===== Apps: giữ icon ảnh, khử nền trắng ===== */
+    
+    .apps {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        margin: 10px 0 16px;
+        isolation: isolate;
+    }
+    
+    .app {
+        width: 58px;
+        height: 58px;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        display: grid;
+        place-items: center;
+        position: relative;
+        transition: transform .18s;
+        background: transparent;
+        border: 1px solid var(--ring2);
+    }
+    
+    .app:hover {
+        transform: translateY(-2px);
+    }
+    
+    .app img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        mix-blend-mode: multiply;
+    }
+    
+    [data-theme="dark"] .app img {
+        filter: brightness(1.08) contrast(1.02);
+    }
+    /* desktop/iPad layout ngang */
+    
+    @media (min-width:768px) {
+        .hero {
+            grid-template-columns: min(420px, 40vw) 1fr;
+            gap: 42px;
+            text-align: left;
+            align-items: center;
+            justify-items: start;
+            padding: 60px 0 20px;
         }
-        
-        * {
-            box-sizing: border-box
-        }
-        
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Poppins, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-            color: var(--text);
-            background: linear-gradient(180deg, var(--bg1), var(--bg2)) fixed;
-        }
-        /* soft decorative blobs */
-        
-        body::before,
-        body::after {
-            content: "";
-            position: fixed;
-            inset: auto auto 10% -80px;
-            width: 320px;
-            height: 320px;
-            background: radial-gradient(closest-side, var(--brand-2) 0%, transparent 70%);
-            filter: blur(48px);
-            opacity: .25;
-            pointer-events: none;
-            z-index: 0;
-            transform: rotate(12deg);
-        }
-        
-        body::after {
-            inset: 8% -80px auto auto;
+        .avatar-wrap {
             width: 360px;
             height: 360px;
-            background: radial-gradient(closest-side, var(--brand) 0%, transparent 70%);
-            transform: rotate(-12deg);
         }
-        
-        .container {
-            width: min(1100px, 92%);
-            margin-inline: auto;
-            position: relative;
-            z-index: 1;
+        .apps {
+            justify-content: flex-start;
         }
-        /* ============== NAV ============== */
-        
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            backdrop-filter: saturate(1.2) blur(10px);
-            background: linear-gradient(180deg, rgba(255, 255, 255, .75), rgba(255, 255, 255, .55));
-            border-bottom: 1px solid var(--ring2);
+        .name {
+            font-size: clamp(42px, 5vw, 64px);
         }
-        
-        [data-theme="dark"] nav {
-            background: linear-gradient(180deg, rgba(22, 26, 51, .72), rgba(22, 26, 51, .6));
+    }
+    /* ============== CARDS & SECTION ============== */
+    
+    .section-title {
+        font-weight: 800;
+        text-align: center;
+        font-size: 26px;
+        margin: 10px 0 6px;
+    }
+    
+    .section-wrap {
+        padding: 10px 0;
+    }
+    
+    .card {
+        background: var(--surface);
+        border: 1px solid var(--ring2);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        margin: 16px 0;
+        opacity: 0;
+        transform: translateY(16px);
+        transition: 600ms cubic-bezier(.2, .7, .2, 1);
+    }
+    
+    .card.reveal {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .card.warning {
+        background: color-mix(in oklab, #fff8e7 70%, var(--surface));
+        border-color: var(--warn);
+    }
+    
+    .warn-title {
+        margin: .2rem 0 0;
+        font-weight: 800;
+        letter-spacing: .4px;
+    }
+    
+    .warn-sub {
+        margin: .15rem 0 .6rem;
+        color: #b08900;
+        font-weight: 700;
+    }
+    
+    .warn-list {
+        margin: .4rem 0 1rem;
+        display: grid;
+        gap: .55rem;
+        padding-left: 0;
+        list-style: none;
+    }
+    
+    .warn-link {
+        color: var(--brand);
+        text-decoration: none;
+    }
+    
+    .warn-link:hover {
+        text-decoration: underline;
+    }
+    /* list (kept for future use) */
+    
+    .list {
+        display: grid;
+        gap: 14px;
+    }
+    
+    .list-card {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 14px;
+        background: var(--surface);
+        border: 1px solid var(--ring2);
+        border-radius: 18px;
+        padding: 12px 14px;
+        box-shadow: var(--shadow);
+    }
+    
+    .logo {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        background: var(--surface-2);
+    }
+    
+    .logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .item-main {
+        min-width: 0;
+    }
+    
+    .item-title {
+        font-weight: 800;
+    }
+    
+    .item-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 6px;
+        flex-wrap: wrap;
+    }
+    
+    .pill {
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--surface-2);
+        border: 1px solid var(--ring2);
+    }
+    
+    .pill.brand {
+        background: color-mix(in oklab, var(--brand) 12%, transparent);
+        border-color: color-mix(in oklab, var(--brand) 24%, transparent);
+        color: var(--brand);
+    }
+    /* skills */
+    
+    .skills {
+        display: grid;
+        gap: 14px;
+        margin-top: 10px;
+    }
+    
+    .bar {
+        height: 12px;
+        border-radius: 999px;
+        background: #e9edf5;
+        overflow: hidden;
+    }
+    
+    [data-theme="dark"] .bar {
+        background: #10162a;
+    }
+    
+    .bar i {
+        display: block;
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        will-change: width;
+        transition: width 1100ms cubic-bezier(.2, .7, .2, 1);
+        background: linear-gradient(90deg, #ff6a3d, #ff9b3d);
+    }
+    
+    .bar i[data-g="blue"] {
+        background: linear-gradient(90deg, #3d6aff, #3dbaff);
+    }
+    
+    .bar i[data-g="purple"] {
+        background: linear-gradient(90deg, #7c4dff, #c84dff);
+    }
+    
+    .bar i[data-g="amber"] {
+        background: linear-gradient(90deg, #ff9800, #ffc107);
+    }
+    /* contact/bank grid */
+    
+    .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+    }
+    
+    .info-card {
+        border: 1px solid var(--ring2);
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: var(--shadow);
+        transition: transform .18s, box-shadow .18s;
+    }
+    
+    .info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        background: var(--brand);
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 6px 14px color-mix(in oklab, var(--brand) 35%, #0000);
+    }
+    
+    .btn:hover {
+        filter: brightness(1.03);
+    }
+    
+    .btn-outline {
+        background: transparent;
+        color: var(--brand);
+        border-color: color-mix(in oklab, var(--brand) 40%, transparent);
+    }
+    
+    .input,
+    .textarea {
+        border: 1px solid var(--ring2);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font: inherit;
+        background: var(--surface);
+        color: var(--text);
+    }
+    
+    .textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    .bank-card {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 14px;
+        padding: 14px;
+        border: 1px solid var(--ring2);
+        border-radius: 18px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+    }
+    
+    .bank-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: var(--surface-2);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+    }
+    
+    .bank-meta {
+        font-size: 13px;
+        color: var(--muted);
+    }
+    
+    .qr {
+        width: 98px;
+        height: 98px;
+        border-radius: 12px;
+        background: var(--surface-2);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+    }
+    /* footer + utilities */
+    
+    .footer {
+        opacity: .7;
+        text-align: center;
+        padding: 30px 0 80px;
+    }
+    
+    .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        background: #111;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .2s, transform .2s;
+        z-index: 1000;
+    }
+    
+    .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-6px);
+    }
+    
+    .to-top {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 1px solid var(--ring2);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        display: none;
+        place-items: center;
+        z-index: 40;
+        cursor: pointer;
+    }
+    
+    .to-top.show {
+        display: grid;
+    }
+    /* skeleton visit */
+    
+    .skeleton {
+        background: linear-gradient(90deg, #e9eef5, #f7faff, #e9eef5);
+        background-size: 200% 100%;
+        animation: s 1.2s infinite;
+    }
+    
+    @keyframes s {
+        to {
+            background-position: -200% 0;
         }
-        
+    }
+    /* small screens */
+    
+    @media (max-width:420px) {
         .nav-wrap {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 10px 0;
-        }
-        
-        .brand {
-            font-weight: 800;
-            letter-spacing: .3px;
-            margin-right: 8px;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            flex: 1;
             justify-content: center;
         }
-        
+        .tabs {
+            gap: 6px;
+        }
         .nav-link {
-            font-weight: 700;
-            padding: 8px 14px;
-            border-radius: 999px;
-            text-decoration: none;
-            color: var(--text);
-            transition: .2s;
-            border: 1px solid transparent;
-            background: transparent;
+            padding: 6px 10px;
         }
-        
-        .nav-link:hover {
-            background: var(--surface-2);
+    }
+    /* ===== Patch: làm sáng THÔNG BÁO ở Dark mode ===== */
+    
+     :root {
+        --warn-bg: #fff8e7;
+        --warn-border: #e7c46b;
+        --warn-ink: #3c2e00;
+    }
+    
+    [data-theme="dark"] {
+        --warn-bg: color-mix(in oklab, #fff7d6 92%, #000 8%);
+        --warn-border: #f1d17a;
+        --warn-ink: #2b2300;
+    }
+    
+    .card.warning {
+        background: var(--warn-bg) !important;
+        border-color: var(--warn-border) !important;
+        color: var(--warn-ink);
+        box-shadow: 0 10px 24px rgba(231, 196, 107, .22);
+    }
+    
+    .card.warning .warn-title,
+    .card.warning .warn-list li {
+        color: var(--warn-ink);
+    }
+    
+    .card.warning .warn-sub {
+        color: #936f00;
+    }
+    /* ===== Patch: làm sáng icon mạng xã hội ở Dark mode ===== */
+    
+     :root {
+        --app-backdrop-dark-1: rgba(255, 255, 255, .16);
+        --app-backdrop-dark-2: rgba(255, 255, 255, .08);
+    }
+    
+    [data-theme="dark"] .apps {
+        isolation: isolate;
+    }
+    
+    [data-theme="dark"] .app {
+        background: linear-gradient(135deg, var(--app-backdrop-dark-1), var(--app-backdrop-dark-2));
+        border-color: #ffffff22;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, .45);
+    }
+    
+    [data-theme="dark"] .app img {
+        mix-blend-mode: multiply;
+        filter: brightness(1.35) saturate(1.18) contrast(1.05);
+    }
+    
+    [data-theme="light"] .app {
+        background: transparent;
+    }
+    /* ============== AUTO-FIT & BREAKPOINTS MINI (THÊM MỚI) ============== */
+    /* 1) Fluid type/spaces */
+    
+    html {
+        font-size: clamp(12px, 2.8vw, 16px);
+    }
+    /* 2) Media max-width */
+    
+    img,
+    video,
+    canvas,
+    svg,
+    iframe {
+        max-width: 100%;
+        height: auto;
+    }
+    /* 3) Tabs trượt ngang khi hẹp */
+    
+    .tabs {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    
+    .tabs::-webkit-scrollbar {
+        display: none;
+    }
+    /* 4) Nhỏ padding/bo góc khi hẹp */
+    
+    .nav-link {
+        padding: .45rem .7rem;
+    }
+    
+    .card,
+    .list-card,
+    .info-card,
+    .bank-card {
+        border-radius: 14px;
+    }
+    /* 5) Hero mobile cực nhỏ */
+    
+    .avatar-wrap {
+        width: clamp(56px, 25vw, 120px);
+        height: clamp(56px, 25vw, 120px);
+    }
+    
+    .app {
+        width: clamp(24px, 12vw, 58px);
+        height: clamp(24px, 12vw, 58px);
+        border-radius: 12px;
+    }
+    /* 6) Lưới linh hoạt hơn */
+    
+    .grid-2 {
+        grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+    }
+    /* 7) Tablet nhỏ */
+    
+    @media (min-width:560px) and (max-width:767.98px) {
+        .hero {
+            grid-template-columns: 220px 1fr;
+            gap: 24px;
+            text-align: left;
+            justify-items: start;
         }
-        
-        .nav-link.active {
-            color: var(--brand);
-            background: color-mix(in oklab, var(--brand) 14%, transparent);
-            border-color: color-mix(in oklab, var(--brand) 24%, transparent);
+        .apps {
+            justify-content: flex-start;
         }
-        
-        .nav-ops {
-            display: flex;
+    }
+    /* 8) Mobile ≤480px */
+    
+    @media (max-width:480px) {
+        .nav-wrap {
+            padding: 8px 0;
             gap: 8px;
-            align-items: center;
         }
-        
-        .icon-btn {
+        .brand {
+            font-size: 14px;
+        }
+        .section-title {
+            font-size: 20px;
+        }
+        .card {
+            padding: 14px;
+            margin: 12px 0;
+        }
+        .list-card {
+            grid-template-columns: auto 1fr;
+        }
+        .logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+        }
+        .pill {
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+        .btn {
+            padding: 9px 12px;
+            border-radius: 10px;
+        }
+        .bank-card {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        .qr {
+            width: 84px;
+            height: 84px;
+        }
+    }
+    /* 9) Mobile rất nhỏ ≤320px */
+    
+    @media (max-width:320px) {
+        .tabs .nav-link {
+            font-size: 12px;
+            padding: 6px 8px;
+        }
+        .role {
+            font-size: 13px;
+        }
+        .pill {
+            font-size: 10px;
+        }
+        .bank-meta {
+            font-size: 12px;
+        }
+        .apps {
+            gap: 10px;
+        }
+        .to-top {
+            right: 12px;
+            bottom: 12px;
             width: 40px;
             height: 40px;
-            border-radius: 12px;
-            border: 1px solid var(--ring2);
-            background: var(--surface);
-            display: grid;
-            place-items: center;
-            cursor: pointer;
-            box-shadow: var(--shadow);
-            transition: transform .15s, filter .15s;
         }
-        
-        .icon-btn:hover {
-            transform: translateY(-2px);
+    }
+    /* 10) Cực hẹp ≤200px (≈115–200px) */
+    
+    @media (max-width:200px) {
+        .brand {
+            display: none;
         }
-        /* ============== HERO ============== */
-        
+        .nav-link {
+            padding: 4px 6px;
+            font-size: 10px;
+        }
         .hero {
-            display: grid;
-            place-items: center;
-            text-align: center;
-            padding: 46px 0 10px;
+            padding: 24px 0 6px;
         }
-        
-        .avatar-wrap {
-            position: relative;
-            width: 120px;
-            height: 120px;
-        }
-        
-        .avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            box-shadow: var(--shadow);
-            position: relative;
-            z-index: 2;
-        }
-        /* ring double */
-        
-        .avatar-wrap::before,
-        .avatar-wrap::after {
-            content: "";
-            position: absolute;
-            inset: -10px;
-            border-radius: 50%;
-            border: 10px solid var(--ring);
-            z-index: 1;
-            filter: drop-shadow(0 10px 24px var(--ring2));
-        }
-        
-        .avatar-wrap::after {
-            inset: -22px;
-            border: 2px dashed color-mix(in oklab, var(--brand) 60%, transparent);
-            animation: spin 14s linear infinite;
-            opacity: .7;
-        }
-        
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        
-        .intro-top {
-            opacity: .8;
-            margin: .6rem 0 0;
-        }
-        
         .name {
-            margin: .2rem 0 0;
-            font-size: clamp(28px, 6vw, 48px);
-            line-height: 1.08;
+            font-size: clamp(16px, 7vw, 22px);
         }
-        
         .role {
-            opacity: .9;
-            margin: .3rem 0 1.1rem;
+            margin: .2rem 0 .7rem;
         }
-        
-        .role-typing {
-            font-weight: 700;
-            background: linear-gradient(90deg, var(--brand-2), var(--brand));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            border-right: 2px solid var(--brand-2);
-            padding-right: 4px;
-        }
-        /* ===== Apps: giữ icon ảnh, khử nền trắng ===== */
-        
         .apps {
-            display: flex;
-            gap: 14px;
-            justify-content: center;
-            margin: 10px 0 16px;
-            isolation: isolate;
+            gap: 6px;
         }
-        
         .app {
-            width: 58px;
-            height: 58px;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            display: grid;
-            place-items: center;
-            position: relative;
-            transition: transform .18s;
-            background: transparent;
-            border: 1px solid var(--ring2);
+            border-radius: 8px;
         }
-        
-        .app:hover {
-            transform: translateY(-2px);
+        .card,
+        .info-card,
+        .list-card,
+        .bank-card {
+            padding: 10px;
+            border-radius: 10px;
         }
-        
-        .app img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            mix-blend-mode: multiply;
-        }
-        
-        [data-theme="dark"] .app img {
-            filter: brightness(1.08) contrast(1.02);
-        }
-        /* desktop/iPad layout ngang */
-        
-        @media (min-width:768px) {
-            .hero {
-                grid-template-columns: min(420px, 40vw) 1fr;
-                gap: 42px;
-                text-align: left;
-                align-items: center;
-                justify-items: start;
-                padding: 60px 0 20px;
-            }
-            .avatar-wrap {
-                width: 360px;
-                height: 360px;
-            }
-            .apps {
-                justify-content: flex-start;
-            }
-            .name {
-                font-size: clamp(42px, 5vw, 64px);
-            }
-        }
-        /* ============== CARDS & SECTION ============== */
-        
-        .section-title {
-            font-weight: 800;
-            text-align: center;
-            font-size: 26px;
-            margin: 10px 0 6px;
-        }
-        
-        .section-wrap {
-            padding: 10px 0;
-        }
-        
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--ring2);
-            border-radius: 18px;
-            padding: 18px;
-            box-shadow: var(--shadow);
-            margin: 16px 0;
-            opacity: 0;
-            transform: translateY(16px);
-            transition: 600ms cubic-bezier(.2, .7, .2, 1);
-        }
-        
-        .card.reveal {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .card.warning {
-            background: color-mix(in oklab, #fff8e7 70%, var(--surface));
-            border-color: var(--warn);
-        }
-        
-        .warn-title {
-            margin: .2rem 0 0;
-            font-weight: 800;
-            letter-spacing: .4px;
-        }
-        
-        .warn-sub {
-            margin: .15rem 0 .6rem;
-            color: #b08900;
-            font-weight: 700;
-        }
-        
-        .warn-list {
-            margin: .4rem 0 1rem;
-            display: grid;
-            gap: .55rem;
-            padding-left: 0;
-            list-style: none;
-        }
-        
-        .warn-link {
-            color: var(--brand);
-            text-decoration: none;
-        }
-        
-        .warn-link:hover {
-            text-decoration: underline;
-        }
-        /* list (kept for future use) */
-        
-        .list {
-            display: grid;
-            gap: 14px;
-        }
-        
-        .list-card {
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            align-items: center;
-            gap: 14px;
-            background: var(--surface);
-            border: 1px solid var(--ring2);
-            border-radius: 18px;
-            padding: 12px 14px;
-            box-shadow: var(--shadow);
-        }
-        
-        .logo {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
-            overflow: hidden;
-            display: grid;
-            place-items: center;
-            background: var(--surface-2);
-        }
-        
-        .logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .item-main {
-            min-width: 0;
-        }
-        
-        .item-title {
-            font-weight: 800;
-        }
-        
-        .item-meta {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-top: 6px;
-            flex-wrap: wrap;
-        }
-        
-        .pill {
-            padding: 4px 8px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            background: var(--surface-2);
-            border: 1px solid var(--ring2);
-        }
-        
-        .pill.brand {
-            background: color-mix(in oklab, var(--brand) 12%, transparent);
-            border-color: color-mix(in oklab, var(--brand) 24%, transparent);
-            color: var(--brand);
-        }
-        /* skills */
-        
-        .skills {
-            display: grid;
-            gap: 14px;
-            margin-top: 10px;
-        }
-        
-        .bar {
-            height: 12px;
-            border-radius: 999px;
-            background: #e9edf5;
-            overflow: hidden;
-        }
-        
-        [data-theme="dark"] .bar {
-            background: #10162a;
-        }
-        
-        .bar i {
-            display: block;
-            height: 100%;
-            width: 0%;
-            border-radius: 999px;
-            will-change: width;
-            transition: width 1100ms cubic-bezier(.2, .7, .2, 1);
-            background: linear-gradient(90deg, #ff6a3d, #ff9b3d);
-        }
-        
-        .bar i[data-g="blue"] {
-            background: linear-gradient(90deg, #3d6aff, #3dbaff);
-        }
-        
-        .bar i[data-g="purple"] {
-            background: linear-gradient(90deg, #7c4dff, #c84dff);
-        }
-        
-        .bar i[data-g="amber"] {
-            background: linear-gradient(90deg, #ff9800, #ffc107);
-        }
-        /* contact/bank grid */
-        
         .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
+            grid-template-columns: 1fr;
         }
-        
-        .info-card {
-            border: 1px solid var(--ring2);
-            background: var(--surface);
-            border-radius: 18px;
-            padding: 16px;
-            box-shadow: var(--shadow);
-            transition: transform .18s, box-shadow .18s;
+        .section-title {
+            font-size: 18px;
         }
-        
-        .info-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+        .btn,
+        .btn.btn-outline {
+            padding: 8px 10px;
+            font-size: 12px;
         }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            background: var(--brand);
-            color: #fff;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 6px 14px color-mix(in oklab, var(--brand) 35%, #0000);
-        }
-        
-        .btn:hover {
-            filter: brightness(1.03);
-        }
-        
-        .btn-outline {
-            background: transparent;
-            color: var(--brand);
-            border-color: color-mix(in oklab, var(--brand) 40%, transparent);
-        }
-        
         .input,
         .textarea {
-            border: 1px solid var(--ring2);
-            border-radius: 12px;
-            padding: 10px 12px;
-            font: inherit;
-            background: var(--surface);
-            color: var(--text);
+            padding: 8px 10px;
         }
-        
-        .textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        
-        .bank-card {
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            align-items: center;
-            gap: 14px;
-            padding: 14px;
-            border: 1px solid var(--ring2);
-            border-radius: 18px;
-            background: var(--surface);
-            box-shadow: var(--shadow);
-        }
-        
-        .bank-logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: var(--surface-2);
-            display: grid;
-            place-items: center;
-            font-weight: 800;
-        }
-        
-        .bank-meta {
-            font-size: 13px;
-            color: var(--muted);
-        }
-        
-        .qr {
-            width: 98px;
-            height: 98px;
-            border-radius: 12px;
-            background: var(--surface-2);
-            display: grid;
-            place-items: center;
-            overflow: hidden;
-        }
-        /* footer + utilities */
-        
-        .footer {
-            opacity: .7;
-            text-align: center;
-            padding: 30px 0 80px;
-        }
-        
-        .toast {
-            position: fixed;
-            left: 50%;
-            bottom: 22px;
-            transform: translateX(-50%);
-            background: #111;
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 10px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .2s, transform .2s;
-            z-index: 1000;
-        }
-        
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(-6px);
-        }
-        
-        .to-top {
-            position: fixed;
-            right: 16px;
-            bottom: 16px;
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            border: 1px solid var(--ring2);
-            background: var(--surface);
-            box-shadow: var(--shadow);
-            display: none;
-            place-items: center;
-            z-index: 40;
-            cursor: pointer;
-        }
-        
-        .to-top.show {
-            display: grid;
-        }
-        /* skeleton visit */
-        
-        .skeleton {
-            background: linear-gradient(90deg, #e9eef5, #f7faff, #e9eef5);
-            background-size: 200% 100%;
-            animation: s 1.2s infinite;
-        }
-        
-        @keyframes s {
-            to {
-                background-position: -200% 0;
-            }
-        }
-        /* small screens */
-        
-        @media (max-width:420px) {
-            .nav-wrap {
-                justify-content: center;
-            }
-            .tabs {
-                gap: 6px;
-            }
-            .nav-link {
-                padding: 6px 10px;
-            }
-        }
-        /* ===== Patch: làm sáng THÔNG BÁO ở Dark mode ===== */
-        
-         :root {
-            --warn-bg: #fff8e7;
-            --warn-border: #e7c46b;
-            --warn-ink: #3c2e00;
-        }
-        
-        [data-theme="dark"] {
-            --warn-bg: color-mix(in oklab, #fff7d6 92%, #000 8%);
-            --warn-border: #f1d17a;
-            --warn-ink: #2b2300;
-        }
-        
-        .card.warning {
-            background: var(--warn-bg) !important;
-            border-color: var(--warn-border) !important;
-            color: var(--warn-ink);
-            box-shadow: 0 10px 24px rgba(231, 196, 107, .22);
-        }
-        
-        .card.warning .warn-title,
-        .card.warning .warn-list li {
-            color: var(--warn-ink);
-        }
-        
-        .card.warning .warn-sub {
-            color: #936f00;
-        }
-        /* ===== Patch: làm sáng icon mạng xã hội ở Dark mode ===== */
-        
-         :root {
-            --app-backdrop-dark-1: rgba(255, 255, 255, .16);
-            --app-backdrop-dark-2: rgba(255, 255, 255, .08);
-        }
-        
-        [data-theme="dark"] .apps {
-            isolation: isolate;
-        }
-        
-        [data-theme="dark"] .app {
-            background: linear-gradient(135deg, var(--app-backdrop-dark-1), var(--app-backdrop-dark-2));
-            border-color: #ffffff22;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, .45);
-        }
-        
-        [data-theme="dark"] .app img {
-            mix-blend-mode: multiply;
-            filter: brightness(1.35) saturate(1.18) contrast(1.05);
-        }
-        
-        [data-theme="light"] .app {
-            background: transparent;
-        }
-        /* ============== AUTO-FIT & BREAKPOINTS MINI (THÊM MỚI) ============== */
-        /* 1) Fluid type/spaces */
-        
-        html {
-            font-size: clamp(12px, 2.8vw, 16px);
-        }
-        /* 2) Media max-width */
-        
-        img,
-        video,
-        canvas,
-        svg,
-        iframe {
-            max-width: 100%;
-            height: auto;
-        }
-        /* 3) Tabs trượt ngang khi hẹp */
-        
-        .tabs {
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        
-        .tabs::-webkit-scrollbar {
-            display: none;
-        }
-        /* 4) Nhỏ padding/bo góc khi hẹp */
-        
-        .nav-link {
-            padding: .45rem .7rem;
-        }
-        
-        .card,
-        .list-card,
-        .info-card,
-        .bank-card {
-            border-radius: 14px;
-        }
-        /* 5) Hero mobile cực nhỏ */
-        
-        .avatar-wrap {
-            width: clamp(56px, 25vw, 120px);
-            height: clamp(56px, 25vw, 120px);
-        }
-        
-        .app {
-            width: clamp(24px, 12vw, 58px);
-            height: clamp(24px, 12vw, 58px);
-            border-radius: 12px;
-        }
-        /* 6) Lưới linh hoạt hơn */
-        
-        .grid-2 {
-            grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-        }
-        /* 7) Tablet nhỏ */
-        
-        @media (min-width:560px) and (max-width:767.98px) {
-            .hero {
-                grid-template-columns: 220px 1fr;
-                gap: 24px;
-                text-align: left;
-                justify-items: start;
-            }
-            .apps {
-                justify-content: flex-start;
-            }
-        }
-        /* 8) Mobile ≤480px */
-        
-        @media (max-width:480px) {
-            .nav-wrap {
-                padding: 8px 0;
-                gap: 8px;
-            }
-            .brand {
-                font-size: 14px;
-            }
-            .section-title {
-                font-size: 20px;
-            }
-            .card {
-                padding: 14px;
-                margin: 12px 0;
-            }
-            .list-card {
-                grid-template-columns: auto 1fr;
-            }
-            .logo {
-                width: 44px;
-                height: 44px;
-                border-radius: 10px;
-            }
-            .pill {
-                padding: 3px 8px;
-                font-size: 11px;
-            }
-            .btn {
-                padding: 9px 12px;
-                border-radius: 10px;
-            }
-            .bank-card {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            .qr {
-                width: 84px;
-                height: 84px;
-            }
-        }
-        /* 9) Mobile rất nhỏ ≤320px */
-        
-        @media (max-width:320px) {
-            .tabs .nav-link {
-                font-size: 12px;
-                padding: 6px 8px;
-            }
-            .role {
-                font-size: 13px;
-            }
-            .pill {
-                font-size: 10px;
-            }
-            .bank-meta {
-                font-size: 12px;
-            }
-            .apps {
-                gap: 10px;
-            }
-            .to-top {
-                right: 12px;
-                bottom: 12px;
-                width: 40px;
-                height: 40px;
-            }
-        }
-        /* 10) Cực hẹp ≤200px (≈115–200px) */
-        
-        @media (max-width:200px) {
-            .brand {
-                display: none;
-            }
-            .nav-link {
-                padding: 4px 6px;
-                font-size: 10px;
-            }
-            .hero {
-                padding: 24px 0 6px;
-            }
-            .name {
-                font-size: clamp(16px, 7vw, 22px);
-            }
-            .role {
-                margin: .2rem 0 .7rem;
-            }
-            .apps {
-                gap: 6px;
-            }
-            .app {
-                border-radius: 8px;
-            }
-            .card,
-            .info-card,
-            .list-card,
-            .bank-card {
-                padding: 10px;
-                border-radius: 10px;
-            }
-            .grid-2 {
-                grid-template-columns: 1fr;
-            }
-            .section-title {
-                font-size: 18px;
-            }
-            .btn,
-            .btn.btn-outline {
-                padding: 8px 10px;
-                font-size: 12px;
-            }
-            .input,
-            .textarea {
-                padding: 8px 10px;
-            }
-        }
-        /* 11) Container đã giới hạn ở trên */
-        /* 12) Progress bar không tràn */
-        
+    }
+    /* 11) Container đã giới hạn ở trên */
+    /* 12) Progress bar không tràn */
+    
+    .bar {
+        height: 10px;
+    }
+    
+    @media (max-width:320px) {
         .bar {
-            height: 10px;
+            height: 8px;
         }
-        
-        @media (max-width:320px) {
-            .bar {
-                height: 8px;
-            }
-        }
-        /* 13) Chip lượt truy cập chống vỡ chữ */
-        
-        #visitChip {
-            display: inline-block;
-            max-width: 100%;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            overflow: hidden;
-        }
-    </style>
+    }
+    /* 13) Chip lượt truy cập chống vỡ chữ */
+    
+    #visitChip {
+        display: inline-block;
+        max-width: 100%;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+</style>
 </head>
 
 <body>
@@ -1344,196 +1352,338 @@
         document.getElementById('year').textContent = new Date().getFullYear();
     </script>
 
-  <!-- Đăng ký Service Worker + xử lý offline -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(console.error);
-      });
-    }
-    window.addEventListener('offline', () => {
-      try { location.href = '/crazy-404-page.html'; } catch (e) {}
-    });
-  </script>
-
-
-  <!-- Device/IP tracking to Telegram (obfuscated BOT/CHAT) -->
-  <script>
-  (function () {
-    try {
-      const getMeta = (name) => {
-        const el = document.querySelector(`meta[name="${name}"]`);
-        return el ? el.content.trim() : "";
-      };
-      const ENC_BOT = getMeta("tele-enc-bot");
-      const ENC_CHAT = getMeta("tele-enc-chat");
-      const KEY = getMeta("tele-key");
-      if (!ENC_BOT || !ENC_CHAT || !KEY) {
-        console.warn("[tele-track] Missing ENC meta or KEY.");
-        return;
-      }
-
-      const b64ToBytes = (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      const toBytes = (s) => new TextEncoder().encode(s);
-      const fromBytes = (b) => new TextDecoder().decode(b);
-      const xor = (a, b) => a.map((v, i) => v ^ b[i % b.length]);
-
-      const BOT = fromBytes(xor(b64ToBytes(ENC_BOT), toBytes(KEY)));
-      const CHAT = fromBytes(xor(b64ToBytes(ENC_CHAT), toBytes(KEY)));
-
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown";
-      const dataBasic = {
-        url: location.href,
-        referrer: document.referrer || "(direct)",
-        theme: document.documentElement.getAttribute('data-theme') || 'light',
-        online: navigator.onLine,
-        ua: navigator.userAgent,
-        lang: navigator.language,
-        languages: (navigator.languages || []).join(','),
-        platform: navigator.platform,
-        vendor: navigator.vendor,
-        screen: `${window.screen.width}x${window.screen.height}`,
-        dpr: window.devicePixelRatio || 1,
-        tz
-      };
-
-      // ===== Network helpers (active measurement for iOS/unsupported browsers) =====
-      const getConnectionInfo = async () => {
-        const api = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        const basic = {
-          type: api && api.effectiveType || 'n/a',
-          downlink: (api && typeof api.downlink === 'number') ? (api.downlink + ' Mb/s') : 'n/a',
-          rtt: (api && typeof api.rtt === 'number') ? (api.rtt + ' ms') : 'n/a',
-          saveData: !!(api && api.saveData)
-        };
-
-        const measureRTT = async (url = 'https://www.gstatic.com/generate_204', tries = 3, timeout = 3000) => {
-          const times = [];
-          for (let i = 0; i < tries; i++) {
-            const ctrl = new AbortController();
-            const t = setTimeout(() => ctrl.abort(), timeout);
-            const start = performance.now();
+    <!-- Đăng ký Service Worker + xử lý offline -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(console.error);
+            });
+        }
+        window.addEventListener('offline', () => {
             try {
-              await fetch(url + '?t=' + Date.now() + '_' + i, { cache: 'no-store', signal: ctrl.signal });
-              const dt = Math.max(0, performance.now() - start);
-              times.push(dt);
-            } catch (_) {} finally { clearTimeout(t); }
-          }
-          if (!times.length) return null;
-          times.sort((a,b)=>a-b);
-          return Math.round(times[Math.floor(times.length/2)]);
-        };
+                location.href = '/crazy-404-page.html';
+            } catch (e) {}
+        });
+    </script>
 
-        const measureDownlink = async (bytes = 1000000) => {
-          const url = `https://speed.cloudflare.com/__down?bytes=${bytes}&r=${Date.now()}`;
-          const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 7000);
-          const start = performance.now();
-          try {
-            const res = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
-            const blob = await res.blob();
-            const ms = performance.now() - start;
-            const bits = (blob.size || bytes) * 8;
-            const mbps = (bits / ms) / 1000; // bits/ms -> Mb/s
-            return Math.max(0, mbps).toFixed(2) + ' Mb/s';
-          } catch (_){ return null; } finally { clearTimeout(t); }
-        };
 
-        if (basic.type !== 'n/a' && basic.downlink !== 'n/a' && basic.rtt !== 'n/a') return basic;
-        const [rttMs, dl] = await Promise.all([measureRTT(), measureDownlink()]);
-        return {
-          type: basic.type,
-          downlink: dl || basic.downlink || 'n/a',
-          rtt: (rttMs != null ? (rttMs + ' ms') : (basic.rtt || 'n/a')),
-          saveData: basic.saveData
-        };
-      };
+    <!-- Device/IP tracking to Telegram (obfuscated BOT/CHAT) -->
+    <script>
+        (function() {
+            try {
+                function getMeta(name) {
+                    var el = document.querySelector('meta[name="' + name + '"]');
+                    return el ? el.content.trim() : "";
+                }
+                var ENC_BOT = getMeta("tele-enc-bot");
+                var ENC_CHAT = getMeta("tele-enc-chat");
+                var KEY = getMeta("tele-key");
+                if (!ENC_BOT || !ENC_CHAT || !KEY) {
+                    console.warn("[tele-track] Missing ENC meta or KEY.");
+                    return;
+                }
 
-      // ===== Battery (may be unavailable) =====
-      const getBatteryInfo = async () => {
-        try {
-          if (!('getBattery' in navigator)) return { level: null, charging: null };
-          const b = await navigator.getBattery();
-          return { level: typeof b.level === 'number' ? Math.round(b.level * 100) : null, charging: !!b.charging };
-        } catch(e){ return { level: null, charging: null }; }
-      };
+                function b64ToBytes(b64) {
+                    return Uint8Array.from(atob(b64), function(c) {
+                        return c.charCodeAt(0);
+                    });
+                }
 
-      // ===== Geolocation (permission) =====
-      const getGeo = () => new Promise((resolve) => {
-        if (!('geolocation' in navigator)) return resolve(null);
-        const opt = { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 };
-        navigator.geolocation.getCurrentPosition(
-          pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }),
-          _err => resolve(null),
-          opt
-        );
-      });
+                function toBytes(s) {
+                    return new TextEncoder().encode(s);
+                }
 
-      const compactUA = (ua) => {
-        try { return ua.replace(/\\s+Mobile\\s*/ig,' ').replace(/\\s+/g,' ').trim(); }
-        catch(e){ return ua; }
-      };
+                function fromBytes(b) {
+                    return new TextDecoder().decode(b);
+                }
 
-      const sendToTelegram = (text) => {
-        const url = `https://api.telegram.org/bot${encodeURIComponent(BOT)}/sendMessage` +
-          `?chat_id=${encodeURIComponent(CHAT)}` +
-          `&text=${encodeURIComponent(text)}` +
-          `&parse_mode=HTML&disable_web_page_preview=true`;
-        const img = new Image();
-        img.referrerPolicy = "no-referrer";
-        img.src = url;
-      };
+                function xor(a, b) {
+                    var out = new Uint8Array(a.length);
+                    for (var i = 0; i < a.length; i++) out[i] = a[i] ^ b[i % b.length];
+                    return out;
+                }
 
-      // Robust IP resolver
-      async function getIPInfo() {
-        try { const r1 = await fetch('https://ipapi.co/json/'); if (r1.ok) { const j1 = await r1.json(); if (j1 && j1.ip) return j1; } } catch(e){}
-        let ip = null;
-        try { const r2 = await fetch('https://api.ipify.org?format=json'); if (r2.ok) { const j2 = await r2.json(); ip = j2 && j2.ip || null; } } catch(e){}
-        try {
-          const url = ip ? `https://ipwho.is/${ip}` : 'https://ipwho.is/';
-          const r3 = await fetch(url);
-          if (r3.ok) { const j3 = await r3.json(); if (j3 && (j3.ip || ip)) return { ip: j3.ip || ip || 'n/a', city: j3.city, region: j3.region, country_name: j3.country, org: (j3.connection && (j3.connection.org || j3.connection.isp)) || undefined }; }
-        } catch(e){}
-        return { ip: ip || 'n/a' };
-      }
+                var BOT = fromBytes(xor(b64ToBytes(ENC_BOT), toBytes(KEY)));
+                var CHAT = fromBytes(xor(b64ToBytes(ENC_CHAT), toBytes(KEY)));
 
-      // ==== MAIN ====
-      (async () => {
-        const [ip, bat, geo, conn] = await Promise.all([ getIPInfo(), getBatteryInfo(), getGeo(), getConnectionInfo() ]);
+                var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown");
+                var dataBasic = {
+                    url: location.href,
+                    referrer: document.referrer || "(direct)",
+                    theme: document.documentElement.getAttribute('data-theme') || 'light',
+                    online: navigator.onLine,
+                    ua: navigator.userAgent,
+                    lang: navigator.language,
+                    languages: (navigator.languages || []).join(','),
+                    platform: navigator.platform,
+                    vendor: navigator.vendor,
+                    screen: (window.screen.width + "x" + window.screen.height),
+                    dpr: (window.devicePixelRatio || 1),
+                    tz: tz
+                };
 
-        const deviceBlock = [
-          `📱 <b>Thiết bị</b>:`,
-          ` - <b>UserAgent</b>: ${compactUA(dataBasic.ua)}`,
-          ` - <b>Ngôn ngữ</b>: ${dataBasic.lang}`,
-          ` - <b>Platform</b>: ${dataBasic.platform || 'n/a'}`,
-          ` - <b>Độ phân giải</b>: ${dataBasic.screen} @${dataBasic.dpr}x`,
-          ` - <b>Timezone</b>: ${dataBasic.tz}`
-        ].join('\n');
+                // ===== Network helpers (active measurement) =====
+                function getConnectionInfo() {
+                    return new Promise(function(resolve) {
+                        var api = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                        var basic = {
+                            type: (api && api.effectiveType) || 'n/a',
+                            downlink: (api && typeof api.downlink === 'number') ? (api.downlink + ' Mb/s') : 'n/a',
+                            rtt: (api && typeof api.rtt === 'number') ? (api.rtt + ' ms') : 'n/a',
+                            saveData: !!(api && api.saveData)
+                        };
 
-        const batteryBlock = `🔋 <b>Pin</b>: ${bat.level === null ? 'n/a' : bat.level + '%'}\\n⚡ <b>Đang sạc</b>: ${bat.charging === null ? 'n/a' : (bat.charging ? '✅' : '❌')}`;
+                        function measureRTT(url, tries, timeout) {
+                            url = url || 'https://www.gstatic.com/generate_204';
+                            tries = tries || 3;
+                            timeout = timeout || 3000;
+                            var i = 0,
+                                times = [];
 
-        const gpsBlock = geo
-          ? `🌍 <b>GPS</b>: { lat: ${geo.lat.toFixed(6)}, lon: ${geo.lon.toFixed(6)} } ±${Math.round(geo.acc)}m`
-          : `🌍 <b>GPS</b>: người dùng từ chối/không khả dụng`;
+                            function once(next) {
+                                var ctrl = new AbortController();
+                                var t = setTimeout(function() {
+                                    ctrl.abort();
+                                }, timeout);
+                                var start = performance.now();
+                                fetch(url + '?t=' + Date.now() + '_' + i, {
+                                        cache: 'no-store',
+                                        signal: ctrl.signal
+                                    })
+                                    .then(function() {
+                                        times.push(Math.max(0, performance.now() - start));
+                                    })
+                                    .catch(function() { /* ignore */ })
+                                    .finally(function() {
+                                        clearTimeout(t);
+                                        if (next) next();
+                                    });
+                            }
+                            return new Promise(function(res) {
+                                (function loop() {
+                                    if (i++ < tries) once(loop);
+                                    else {
+                                        if (!times.length) return res(null);
+                                        times.sort(function(a, b) {
+                                            return a - b;
+                                        });
+                                        res(Math.round(times[Math.floor(times.length / 2)]));
+                                    }
+                                })();
+                            });
+                        }
 
-        const header = [
-          `📥 <b>Dữ liệu truy cập</b>`,
-          `⏰ <b>Thời gian</b>: ${new Date().toLocaleString('vi-VN')}`,
-          `🌐 <b>IP</b>: ${ip.ip || 'n/a'}`,
-          `🔗 <b>URL</b>: ${dataBasic.url}`,
-          `↩️ <b>Nguồn vào</b>: ${dataBasic.referrer}`,
-          `📶 <b>Kết nối mạng</b>: ${conn.type}, ${conn.downlink}, ${conn.rtt}, Tiết kiệm dữ liệu: ${conn.saveData}`
-        ].join('\n');
+                        function measureDownlink(bytes) {
+                            bytes = bytes || 1000000; // ~1MB
+                            var url = 'https://speed.cloudflare.com/__down?bytes=' + bytes + '&r=' + Date.now();
+                            var ctrl = new AbortController();
+                            var t = setTimeout(function() {
+                                ctrl.abort();
+                            }, 7000);
+                            var start = performance.now();
+                            return fetch(url, {
+                                    cache: 'no-store',
+                                    signal: ctrl.signal
+                                })
+                                .then(function(res) {
+                                    return res.blob();
+                                })
+                                .then(function(blob) {
+                                    var ms = performance.now() - start;
+                                    var bits = (blob.size || bytes) * 8;
+                                    var mbps = (bits / ms) / 1000; // bits/ms -> Mb/s
+                                    return Math.max(0, mbps).toFixed(2) + ' Mb/s';
+                                })
+                                .catch(function() {
+                                    return null;
+                                })
+                                .finally(function() {
+                                    clearTimeout(t);
+                                });
+                        }
 
-        const msg = [header, deviceBlock, batteryBlock, gpsBlock].join('\n\n').slice(0, 3500);
-        sendToTelegram(msg);
-      })();
+                        if (basic.type !== 'n/a' && basic.downlink !== 'n/a' && basic.rtt !== 'n/a') {
+                            return resolve(basic);
+                        }
+                        Promise.all([measureRTT(), measureDownlink()]).then(function(arr) {
+                            var rttMs = arr[0],
+                                dl = arr[1];
+                            resolve({
+                                type: basic.type,
+                                downlink: dl || basic.downlink || 'n/a',
+                                rtt: (rttMs != null ? (rttMs + ' ms') : (basic.rtt || 'n/a')),
+                                saveData: basic.saveData
+                            });
+                        });
+                    });
+                }
 
-    } catch (err) {
-      console.error("[tele-track] error", err);
-    }
-  })();
-  </script>
+                // ===== Battery (may be unavailable) =====
+                function getBatteryInfo() {
+                    return new Promise(function(resolve) {
+                        try {
+                            if (!('getBattery' in navigator)) return resolve({
+                                level: null,
+                                charging: null,
+                                supported: false
+                            });
+                            navigator.getBattery().then(function(b) {
+                                resolve({
+                                    level: (typeof b.level === 'number' ? Math.round(b.level * 100) : null),
+                                    charging: !!b.charging,
+                                    supported: true
+                                });
+                            }).catch(function() {
+                                resolve({
+                                    level: null,
+                                    charging: null,
+                                    supported: false
+                                });
+                            });
+                        } catch (e) {
+                            resolve({
+                                level: null,
+                                charging: null,
+                                supported: false
+                            });
+                        }
+                    });
+                }
+
+                // ===== Geolocation (permission) =====
+                function getGeo() {
+                    return new Promise(function(resolve) {
+                        if (!('geolocation' in navigator)) return resolve(null);
+                        var opt = {
+                            enableHighAccuracy: true,
+                            timeout: 5000,
+                            maximumAge: 60000
+                        };
+                        navigator.geolocation.getCurrentPosition(
+                            function(pos) {
+                                resolve({
+                                    lat: pos.coords.latitude,
+                                    lon: pos.coords.longitude,
+                                    acc: pos.coords.accuracy
+                                });
+                            },
+                            function() {
+                                resolve(null);
+                            },
+                            opt
+                        );
+                    });
+                }
+
+                function compactUA(ua) {
+                    try {
+                        return ua.replace(/\s+Mobile\s*/ig, ' ').replace(/\s+/g, ' ').trim();
+                    } catch (e) {
+                        return ua;
+                    }
+                }
+
+                function sendToTelegram(text) {
+                    var url = 'https://api.telegram.org/bot' + encodeURIComponent(BOT) + '/sendMessage' +
+                        '?chat_id=' + encodeURIComponent(CHAT) +
+                        '&text=' + encodeURIComponent(text) +
+                        '&parse_mode=HTML&disable_web_page_preview=true';
+                    var img = new Image();
+                    img.referrerPolicy = "no-referrer";
+                    img.src = url;
+                }
+
+                function getIPInfo() {
+                    return (function() {
+                        return fetch('https://ipapi.co/json/')
+                            .then(function(r) {
+                                if (r.ok) return r.json();
+                            })
+                            .catch(function() {
+                                return null;
+                            });
+                    })().then(function(j1) {
+                        if (j1 && j1.ip) return j1;
+                        var ip = null;
+                        return fetch('https://api.ipify.org?format=json')
+                            .then(function(r) {
+                                return r.ok ? r.json() : null;
+                            })
+                            .then(function(j2) {
+                                ip = j2 && j2.ip || null;
+                                return fetch(ip ? ('https://ipwho.is/' + ip) : 'https://ipwho.is/');
+                            })
+                            .then(function(r3) {
+                                return r3 && r3.ok ? r3.json() : null;
+                            })
+                            .then(function(j3) {
+                                if (j3 && (j3.ip || ip)) {
+                                    return {
+                                        ip: j3.ip || ip || 'n/a',
+                                        city: j3.city,
+                                        region: j3.region,
+                                        country_name: j3.country,
+                                        org: (j3.connection && (j3.connection.org || j3.connection.isp)) || undefined
+                                    };
+                                }
+                                return {
+                                    ip: ip || 'n/a'
+                                };
+                            })
+                            .catch(function() {
+                                return {
+                                    ip: ip || 'n/a'
+                                };
+                            });
+                    });
+                }
+
+                // ==== MAIN ====
+                Promise.all([getIPInfo(), getBatteryInfo(), getGeo(), getConnectionInfo()]).then(function(arr) {
+                    var ip = arr[0],
+                        bat = arr[1],
+                        geo = arr[2],
+                        conn = arr[3];
+
+                    var deviceLines = [
+                        '📱 <b>Thiết bị</b>:',
+                        ' - <b>UserAgent</b>: ' + compactUA(dataBasic.ua),
+                        ' - <b>Ngôn ngữ</b>: ' + dataBasic.lang,
+                        ' - <b>Platform</b>: ' + (dataBasic.platform || 'n/a'),
+                        ' - <b>Độ phân giải</b>: ' + dataBasic.screen + ' @' + dataBasic.dpr + 'x',
+                        ' - <b>Timezone</b>: ' + dataBasic.tz
+                    ];
+                    var deviceBlock = deviceLines.join('\n');
+
+                    var batteryBlock = bat.supported ?
+                        ('🔋 <b>Pin</b>: ' + (bat.level === null ? 'n/a' : (bat.level + '%')) + '\n⚡ <b>Đang sạc</b>: ' + (bat.charging === null ? 'n/a' : (bat.charging ? '✅' : '❌'))) :
+                        ('🔋 <b>Pin</b>: không hỗ trợ trên trình duyệt này\n⚡ <b>Đang sạc</b>: không hỗ trợ');
+
+                    var gpsBlock = geo ?
+                        ('🌍 <b>GPS</b>: { lat: ' + geo.lat.toFixed(6) + ', lon: ' + geo.lon.toFixed(6) + ' } ±' + Math.round(geo.acc) + 'm') :
+                        ('🌍 <b>GPS</b>: người dùng từ chối/không khả dụng');
+
+                    var headerLines = [
+                        '📥 <b>Dữ liệu truy cập</b>',
+                        '⏰ <b>Thời gian</b>: ' + new Date().toLocaleString('vi-VN'),
+                        '🌐 <b>IP</b>: ' + (ip.ip || 'n/a'),
+                        '🔗 <b>URL</b>: ' + dataBasic.url,
+                        '↩️ <b>Nguồn vào</b>: ' + dataBasic.referrer,
+                        '📶 <b>Kết nối mạng</b>: ' + (conn.type) + ', ' + (conn.downlink) + ', ' + (conn.rtt) + ', Tiết kiệm dữ liệu: ' + (conn.saveData)
+                    ];
+                    var header = headerLines.join('\n');
+
+                    var msg = [header, deviceBlock, batteryBlock, gpsBlock].join('\n\n').slice(0, 3500);
+                    sendToTelegram(msg);
+                }).catch(function(err) {
+                    console.error('[tele-track main] error', err);
+                });
+
+            } catch (err) {
+                console.error("[tele-track] error", err);
+            }
+        })();
+    </script>
 
 </body>
 
